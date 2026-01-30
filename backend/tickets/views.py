@@ -1,10 +1,16 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import viewsets
+from rest_framework.decorators import action
 
 from .models import Ticket, Comment
 from .serializers import TicketSerializer, CommentSerializer
-from .ai_service import auto_categorize_ticket
+from .ai_service import categorize_ticket
+
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAdminUser
+from django.db.models import Count
+
 
 
 class TicketViewSet(viewsets.ModelViewSet):
@@ -27,9 +33,7 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         description = serializer.validated_data.get("description", "")
-        category = auto_categorize_ticket(description)
-
-        print("AI CATEGORY:", category)  # debug (can remove later)
+        category = categorize_ticket(description)
 
         serializer.save(
             created_by=self.request.user,
@@ -45,6 +49,28 @@ class TicketViewSet(viewsets.ModelViewSet):
             )
         return super().update(request, *args, **kwargs)
 
+    @action(detail=True, methods=["patch"])
+    def update_status(self, request, pk=None):
+        ticket = self.get_object()
+        new_status = request.data.get("status")
+
+        if not request.user.groups.filter(name="agent").exists():
+            return Response(
+                {"detail": "Only agents can update ticket status"},
+                status=403
+            )
+
+        if new_status not in ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"]:
+            return Response(
+                {"detail": "Invalid status"},
+                status=400
+            )
+
+        ticket.status = new_status
+        ticket.save()
+
+        return Response(TicketSerializer(ticket).data)
+
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
@@ -53,16 +79,44 @@ class CommentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
 
-        # Admin → all comments
         if user.is_superuser:
             return Comment.objects.all()
 
-        # Agent → comments on assigned tickets
         if user.groups.filter(name="agent").exists():
             return Comment.objects.filter(ticket__assigned_to=user)
 
-        # Customer → comments on own tickets
         return Comment.objects.filter(ticket__created_by=user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+class AdminStatsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        total_tickets = Ticket.objects.count()
+
+        by_status = (
+            Ticket.objects.values("status")
+            .annotate(count=Count("id"))
+        )
+
+        by_category = (
+            Ticket.objects.values("category")
+            .annotate(count=Count("id"))
+        )
+
+        agent_workload = (
+            Ticket.objects
+            .exclude(assigned_to=None)
+            .values("assigned_to__username")
+            .annotate(count=Count("id"))
+        )
+
+        return Response({
+            "total_tickets": total_tickets,
+            "by_status": by_status,
+            "by_category": by_category,
+            "agent_workload": agent_workload,
+        })

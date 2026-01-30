@@ -1,16 +1,49 @@
-def auto_categorize_ticket(description: str) -> str:
+import os
+import google.generativeai as genai
+
+CATEGORIES = [
+    "Authentication",
+    "Billing",
+    "Technical Issue",
+    "Feature Request",
+    "General Support",
+]
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+
+def categorize_ticket(description: str) -> str:
     """
-    Simple rule-based placeholder.
-    Can be replaced with LLM call later.
+    Categorize support tickets using Gemini.
+    Falls back to 'General Support' on failure.
     """
+    try:
+        model = genai.GenerativeModel("gemini-pro")
 
-    text = description.lower()
+        prompt = f"""
+You are a support ticket classifier.
 
-    if "payment" in text or "charged" in text or "billing" in text:
-        return "Billing"
-    if "error" in text or "bug" in text or "issue" in text:
-        return "Technical"
-    if "login" in text or "password" in text or "account" in text:
-        return "Account"
+Allowed categories:
+- Authentication
+- Billing
+- Technical Issue
+- Feature Request
+- General Support
 
-    return "General"
+Ticket description:
+"{description}"
+
+Respond with ONLY ONE category from the list above.
+"""
+
+        response = model.generate_content(prompt)
+        category = response.text.strip()
+
+        if category not in CATEGORIES:
+            return "General Support"
+
+        return category
+
+    except Exception as e:
+        print("Gemini categorization failed:", e)
+        return "General Support"
