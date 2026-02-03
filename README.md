@@ -1,6 +1,6 @@
 # 🎫 Ticketing System — Help Desk / Support Portal
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Built with Django & React](https://img.shields.io/badge/Stack-Django%20%7C%20React-lightgrey.svg)](#-tech-stack) [![OpenAI](https://img.shields.io/badge/AI-OpenAI-orange.svg)](https://openai.com)
+[![Built with Django & React](https://img.shields.io/badge/Stack-Django%20%7C%20React-lightgrey.svg)](#-tech-stack) [![OpenAI](https://img.shields.io/badge/AI-OpenAI-orange.svg)](https://openai.com)
 
 A polished, full-stack Help Desk / Ticketing System where customers raise support tickets, agents manage and resolve them, and admins oversee the entire system with analytics. Includes AI-powered ticket categorization and a role-based workflow.
 
@@ -12,14 +12,6 @@ A polished, full-stack Help Desk / Ticketing System where customers raise suppor
 - Threaded comments (customer / internal agent notes)
 - Status workflow: `OPEN → IN_PROGRESS → RESOLVED → CLOSED`
 - Docker-ready and environment-driven configuration for production
-
----
-
-## 🖼️ Demo
-> Replace the image below with an actual screenshot or GIF of your app to make this section pop.
-
-![App screenshot placeholder](https://via.placeholder.com/1200x480.png?text=Ticketing+System+Preview)
-
 ---
 
 ## 📚 Table of Contents
@@ -177,11 +169,4 @@ Please follow the code style and include meaningful commit messages.
 ## 📄 License
 This project is released under the MIT License. See [LICENSE](LICENSE) for details.
 
----
 
-If you'd like, I can:
-- Add actual badges (build, coverage) linked to your repo,
-- Insert real screenshots/GIFs if you upload them,
-- Convert the Quick API section into a full OpenAPI/Swagger example.
-
-Happy to apply any of these — tell me which and I’ll update the README.
