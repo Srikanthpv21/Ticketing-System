@@ -165,8 +165,3 @@ Contributions welcome! Please:
 Please follow the code style and include meaningful commit messages.
 
 ---
-
-## 📄 License
-This project is released under the MIT License. See [LICENSE](LICENSE) for details.
-
-
