@@ -163,5 +163,3 @@ Contributions welcome! Please:
 3. Open a pull request with a clear description and tests where appropriate
 
 Please follow the code style and include meaningful commit messages.
-
----
