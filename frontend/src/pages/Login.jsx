@@ -16,18 +16,13 @@ export default function Login() {
     setError("");
     setLoading(true);
 
-    try {
-      const user = await login(username, password);
+    const result = await login(username, password);
 
-      // Role-based redirect (ONLY place this logic should live)
-      if (user.role === "customer") navigate("/customer");
-      else if (user.role === "agent") navigate("/agent");
-      else navigate("/admin");
-    } catch {
-      setError("Invalid username or password");
-    } finally {
-      setLoading(false);
+    if (!result.success) {
+      setError(result.error || "Invalid username or password");
     }
+    // Navigation is handled by AuthContext
+    setLoading(false);
   };
 
   return (
