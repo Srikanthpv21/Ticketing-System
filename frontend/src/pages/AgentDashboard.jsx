@@ -2,26 +2,52 @@ import { useEffect, useState } from "react";
 import api from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
-/* ---------------- Navbar ---------------- */
+/* ---------------- Components ---------------- */
+
 function Navbar() {
   const { logout, user } = useAuth();
 
   return (
-    <div className="h-14 bg-white border-b flex items-center justify-between px-6">
-      <h1 className="font-semibold text-lg">Help Desk — Agent</h1>
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="bg-purple-600 p-1.5 rounded-lg">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <h1 className="font-bold text-xl text-gray-900 tracking-tight">Agent<span className="text-purple-600">Workspace</span></h1>
+        </div>
 
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-gray-600">
-          {user?.username} (Agent)
-        </span>
-        <button
-          onClick={logout}
-          className="text-sm bg-red-500 text-white px-3 py-1 rounded"
-        >
-          Logout
-        </button>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex flex-col items-end">
+            <span className="text-sm font-semibold text-gray-900">{user?.username}</span>
+            <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full">Support Agent</span>
+          </div>
+          <button
+            onClick={logout}
+            className="text-sm bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-red-600 hover:border-red-200 px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm"
+          >
+            Sign Out
+          </button>
+        </div>
       </div>
-    </div>
+    </header>
+  );
+}
+
+function StatusBadge({ status }) {
+  const styles = {
+    OPEN: "bg-yellow-50 text-yellow-700 ring-yellow-600/20",
+    IN_PROGRESS: "bg-blue-50 text-blue-700 ring-blue-700/10",
+    RESOLVED: "bg-green-50 text-green-700 ring-green-600/20",
+    CLOSED: "bg-gray-50 text-gray-600 ring-gray-500/10",
+  }[status] || "bg-gray-50 text-gray-600 ring-gray-500/10";
+
+  return (
+    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${styles}`}>
+      {status.replace("_", " ")}
+    </span>
   );
 }
 
@@ -34,6 +60,7 @@ export default function AgentDashboard() {
   const [message, setMessage] = useState("");
   const [aiSuggestion, setAiSuggestion] = useState("");
   const [aiSummary, setAiSummary] = useState("");
+  const [loadingAi, setLoadingAi] = useState(false);
 
   /* Load tickets */
   const loadTickets = async () => {
@@ -77,169 +104,231 @@ export default function AgentDashboard() {
 
   /* AI reply suggestion */
   const getAiSuggestion = async () => {
-    const res = await api.get(`/api/tickets/${active.id}/ai_reply/`);
-    setAiSuggestion(res.data.suggestion);
-    setMessage(res.data.suggestion);
+    setLoadingAi(true);
+    try {
+      const res = await api.get(`/api/tickets/${active.id}/ai_reply/`);
+      setAiSuggestion(res.data.suggestion);
+      setMessage(res.data.suggestion);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to get AI suggestion");
+    } finally {
+      setLoadingAi(false);
+    }
   };
 
   /* AI summary */
   const getAiSummary = async () => {
-    const res = await api.get(`/api/tickets/${active.id}/ai_summary/`);
-    setAiSummary(res.data.summary);
+    setLoadingAi(true);
+    try {
+      const res = await api.get(`/api/tickets/${active.id}/ai_summary/`);
+      setAiSummary(res.data.summary);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to get AI summary");
+    } finally {
+      setLoadingAi(false);
+    }
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="h-screen flex flex-col bg-gray-50 font-sans text-gray-900">
       <Navbar />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* -------- Ticket List -------- */}
-        <aside className="w-80 bg-white border-r flex flex-col">
-          <div className="p-4 border-b font-semibold">Assigned Tickets</div>
+      <div className="flex flex-1 overflow-hidden max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 gap-6">
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-2">
+        {/* -------- Left Panel (Ticket List) -------- */}
+        <aside className="w-full md:w-80 flex flex-col gap-4 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+            <h2 className="font-bold text-gray-900">Assigned Tickets</h2>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
             {tickets.map((t) => (
               <div
                 key={t.id}
-                onClick={() => loadTicket(t.id)}
-                className={`cursor-pointer border rounded p-3 text-sm
-                  ${
-                    active?.id === t.id
-                      ? "bg-blue-50 border-blue-500"
-                      : "bg-white"
+                onClick={() => { setActive(t); setAiSummary(""); setAiSuggestion(""); }}
+                className={`cursor-pointer rounded-lg p-3 text-sm transition-all duration-200 border
+                  ${active?.id === t.id
+                    ? "bg-purple-50 border-purple-200 shadow-sm ring-1 ring-purple-200"
+                    : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"
                   }`}
               >
-                <div className="font-medium">{t.title}</div>
-                <div className="text-xs text-gray-500">
-                  {t.status} • {t.category}
+                <div className="flex justify-between items-start mb-1">
+                  <span className="font-medium text-gray-900 line-clamp-1">{t.title}</span>
+                  <span className="text-xs text-gray-400">#{t.id}</span>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex gap-2 text-xs text-gray-500">
+                    <span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">{t.category}</span>
+                  </div>
+                  <StatusBadge status={t.status} />
                 </div>
               </div>
             ))}
+            {tickets.length === 0 && (
+              <div className="text-center py-8 text-gray-400 text-sm">
+                No tickets assigned.
+              </div>
+            )}
           </div>
         </aside>
 
-        {/* -------- Chat Panel -------- */}
-        <main className="flex-1 flex flex-col">
+        {/* -------- Main Panel -------- */}
+        <main className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
           {active ? (
             <>
-              {/* Header */}
-              <div className="bg-white p-4 border-b space-y-2">
-                <h2 className="font-semibold">{active.title}</h2>
-                <p className="text-sm text-gray-600">
-                  {active.description}
-                </p>
+              {/* Header & Controls */}
+              <div className="bg-white border-b border-gray-100 p-6">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">{active.title}</h2>
+                      <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                          {active.created_by}
+                        </span>
+                        <span>•</span>
+                        <span>{new Date(active.created_at).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <StatusBadge status={active.status} />
+                  </div>
 
-                <div className="flex gap-2 pt-2 flex-wrap">
-                  <button
-                    onClick={() => updateStatus("IN_PROGRESS")}
-                    className="px-3 py-1 text-sm rounded bg-blue-600 text-white"
-                  >
-                    In Progress
-                  </button>
-                  <button
-                    onClick={() => updateStatus("RESOLVED")}
-                    className="px-3 py-1 text-sm rounded bg-green-600 text-white"
-                  >
-                    Resolve
-                  </button>
-                  <button
-                    onClick={() => updateStatus("CLOSED")}
-                    className="px-3 py-1 text-sm rounded bg-gray-600 text-white"
-                  >
-                    Close
-                  </button>
-                  <button
-                    onClick={getAiSummary}
-                    className="px-3 py-1 text-sm rounded bg-indigo-600 text-white"
-                  >
-                    AI Summary
-                  </button>
+                  <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    {active.description}
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-gray-50 mt-2">
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide mr-auto">Actions:</span>
+
+                    <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+                      <button onClick={() => updateStatus("IN_PROGRESS")} className="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-white hover:shadow-sm transition-all text-blue-700">In Progress</button>
+                      <button onClick={() => updateStatus("RESOLVED")} className="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-white hover:shadow-sm transition-all text-green-700">Resolve</button>
+                      <button onClick={() => updateStatus("CLOSED")} className="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-white hover:shadow-sm transition-all text-gray-700">Close</button>
+                    </div>
+
+                    <div className="h-6 w-px bg-gray-200 mx-1"></div>
+
+                    <button
+                      onClick={getAiSummary}
+                      disabled={loadingAi}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                      {loadingAi ? "Thinking..." : "AI Summary"}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Messages */}
-              <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+              {/* AI Summary View */}
+              {aiSummary && (
+                <div className="bg-indigo-50 border-b border-indigo-100 p-4 animate-fadeIn">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-indigo-100 p-1.5 rounded-md text-indigo-600 mt-0.5">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-indigo-900 mb-1">Smart Summary</h4>
+                      <p className="text-sm text-indigo-800 leading-relaxed whitespace-pre-wrap">{aiSummary}</p>
+                    </div>
+                    <button onClick={() => setAiSummary("")} className="ml-auto text-indigo-400 hover:text-indigo-600">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Chat Area */}
+              <div className="flex-1 p-6 space-y-6 overflow-y-auto bg-gray-50/30">
                 {active.comments.map((c) => {
                   const isMine = c.user === user.username;
-
                   return (
                     <div
                       key={c.id}
-                      className={`flex ${
-                        isMine ? "justify-end" : "justify-start"
-                      }`}
+                      className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                     >
-                      <div
-                        className={`max-w-lg px-4 py-2 rounded-lg text-sm
-                          ${
-                            isMine
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-200 text-gray-900"
-                          }`}
-                      >
-                        <div className="text-xs font-medium mb-1 opacity-70">
-                          {c.user}
+                      <div className={`flex flex-col max-w-[80%] ${isMine ? "items-end" : "items-start"}`}>
+                        <div
+                          className={`px-5 py-3 rounded-2xl text-sm shadow-sm
+                            ${isMine
+                              ? "bg-purple-600 text-white rounded-br-none"
+                              : "bg-white border border-gray-200 text-gray-800 rounded-bl-none"
+                            }`}
+                        >
+                          <p className="leading-relaxed whitespace-pre-wrap">{c.message}</p>
                         </div>
-                        {c.message}
+                        <span className="text-[10px] text-gray-400 mt-1 px-1">
+                          {c.user} • {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Reply box */}
-              <form
-                onSubmit={sendMessage}
-                className="bg-white border-t p-4 flex gap-2"
-              >
-                <input
-                  className="flex-1 border rounded px-4 py-2"
-                  placeholder="Reply to customer..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                />
+              {/* Suggestions & Input */}
+              <div className="bg-white border-t border-gray-100 p-4">
+                {aiSuggestion && (
+                  <div className="mb-4 bg-purple-50 border border-purple-100 rounded-lg p-3 relative animate-slideUp">
+                    <div className="text-xs font-bold text-purple-700 mb-1 uppercase tracking-wider">AI Suggested Reply</div>
+                    <p className="text-sm text-gray-700 italic">"{aiSuggestion}"</p>
+                    <button
+                      onClick={() => setAiSuggestion("")}
+                      className="absolute top-2 right-2 text-purple-300 hover:text-purple-500"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                )}
 
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-5 rounded"
-                >
-                  Send
-                </button>
+                <form onSubmit={sendMessage} className="flex gap-3 items-end">
+                  <button
+                    type="button"
+                    onClick={getAiSuggestion}
+                    disabled={loadingAi}
+                    className="p-3 rounded-xl border border-purple-200 text-purple-600 hover:bg-purple-50 transition-colors shadow-sm disabled:opacity-50"
+                    title="Generate AI Reply"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={getAiSuggestion}
-                  className="bg-purple-600 text-white px-4 rounded"
-                >
-                  AI Suggest
-                </button>
-              </form>
+                  <div className="flex-1 relative">
+                    <textarea
+                      className="w-full border-gray-200 rounded-xl focus:ring-purple-500 focus:border-purple-500 pl-4 pr-12 py-3 bg-gray-50 focus:bg-white transition-all resize-none shadow-sm text-sm"
+                      placeholder="Type your reply..."
+                      rows="1"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      style={{ minHeight: '46px', maxHeight: '120px' }}
+                      onInput={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                    />
+                  </div>
 
-              {/* AI Suggestion */}
-              {aiSuggestion && (
-                <div className="bg-purple-50 border-t p-3 text-sm">
-                  <strong>AI Suggested Reply</strong>
-                  <p className="mt-1 whitespace-pre-wrap">
-                    {aiSuggestion}
-                  </p>
-                </div>
-              )}
-
-              {/* AI Summary */}
-              {aiSummary && (
-                <div className="bg-indigo-50 border-t p-4 text-sm">
-                  <strong className="block mb-1">
-                    AI Ticket Summary
-                  </strong>
-                  <pre className="whitespace-pre-wrap text-gray-700">
-                    {aiSummary}
-                  </pre>
-                </div>
-              )}
+                  <button
+                    disabled={!message.trim()}
+                    className="bg-purple-600 text-white p-3 rounded-xl hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex-shrink-0"
+                  >
+                    <svg className="w-5 h-5 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  </button>
+                </form>
+              </div>
             </>
           ) : (
-            <div className="p-6 text-gray-500">
-              Select a ticket to start working
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              </div>
+              <p className="font-medium">Agent Workspace</p>
+              <p className="text-sm mt-1">Select a ticket to view details and reply.</p>
             </div>
           )}
         </main>

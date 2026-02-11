@@ -10,10 +10,7 @@ from .ai import auto_categorize, suggest_reply, summarize_ticket
 
 User = get_user_model()
 
-
-# --------------------
 # Permissions
-# --------------------
 class IsAgentOrAdmin(permissions.BasePermission):
     """
     Allow only agents or admins
@@ -26,17 +23,14 @@ class IsAgentOrAdmin(permissions.BasePermission):
         )
 
 
-# --------------------
 # Ticket ViewSet
-# --------------------
 class TicketViewSet(viewsets.ModelViewSet):
     serializer_class = TicketSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
-    # --------------------
+
     # Queryset by role
-    # --------------------
     def get_queryset(self):
         user = self.request.user
 
@@ -49,9 +43,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         # customer
         return Ticket.objects.filter(created_by=user)
 
-    # --------------------
     # Create ticket (Customer)
-    # --------------------
     def perform_create(self, serializer):
         description = serializer.validated_data.get("description", "")
 
@@ -68,9 +60,7 @@ class TicketViewSet(viewsets.ModelViewSet):
             status=Ticket.STATUS_OPEN,
         )
 
-    # --------------------
     # AI Reply Suggestion
-    # --------------------
     @action(
         detail=True,
         methods=["get"],
@@ -84,9 +74,8 @@ class TicketViewSet(viewsets.ModelViewSet):
 
         return Response({"suggestion": suggestion})
 
-    # --------------------
+
     # AI Ticket Summary
-    # --------------------
     @action(
         detail=True,
         methods=["get"],
@@ -100,9 +89,8 @@ class TicketViewSet(viewsets.ModelViewSet):
 
         return Response({"summary": summary})
 
-    # --------------------
+
     # Update ticket status
-    # --------------------
     @action(
         detail=True,
         methods=["patch"],
@@ -123,15 +111,25 @@ class TicketViewSet(viewsets.ModelViewSet):
 
         return Response({"status": ticket.status})
 
-    # --------------------
+    # List Agents
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[IsAgentOrAdmin],
+    )
+    def agents(self, request):
+        agents = User.objects.filter(role="agent")
+        from .serializers import UserListSerializer
+        serializer = UserListSerializer(agents, many=True)
+        return Response(serializer.data)
+
     # Add comment (Chat)
-    # --------------------
     @action(detail=True, methods=["post"])
     def comments(self, request, pk=None):
         ticket = self.get_object()
         user = request.user
 
-        # 🔒 Permission rules
+        # Permission rules
         if user.role == "customer" and ticket.created_by != user:
             return Response(
                 {"detail": "Not allowed"},
