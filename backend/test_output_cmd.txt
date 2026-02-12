@@ -1,0 +1,46 @@
+Creating test database for alias 'default'...
+C:\Users\vinot\OneDrive\Desktop\Ticketing-System\backend\tickets\ai.py:2: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+E.......F.....
+======================================================================
+ERROR: tests (unittest.loader._FailedTest.tests)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: tests
+Traceback (most recent call last):
+  File "C:\Python313\Lib\unittest\loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "C:\Python313\Lib\unittest\loader.py", line 339, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "C:\Users\vinot\OneDrive\Desktop\Ticketing-System\backend\tickets\tests.py", line 9, in <module>
+    from tickets.models import Ticket, Comment, Category
+ImportError: cannot import name 'Category' from 'tickets.models' (C:\Users\vinot\OneDrive\Desktop\Ticketing-System\backend\tickets\models.py)
+
+
+======================================================================
+FAIL: test_create_superuser (tests.UserModelTest.test_create_superuser)
+Test creating a superuser
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\vinot\OneDrive\Desktop\Ticketing-System\backend\users\tests.py", line 39, in test_create_superuser
+    self.assertEqual(admin.role, 'admin')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'customer' != 'admin'
+- customer
++ admin
+
+
+----------------------------------------------------------------------
+Ran 14 tests in 22.810s
+
+FAILED (failures=1, errors=1)
+Destroying test database for alias 'default'...
+Found 14 test(s).
+System check identified no issues (0 silenced).

@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
-from tickets.models import Ticket, Comment, Category
+from tickets.models import Ticket, Comment
 from datetime import datetime
 
 User = get_user_model()
@@ -62,7 +62,7 @@ class TicketModelTest(TestCase):
             password='testpass123',
             role='agent'
         )
-        self.category = Category.objects.create(name='Technical')
+        self.category = 'OTHER'
         
     def test_ticket_creation(self):
         """Test ticket is created with correct defaults"""
@@ -122,7 +122,7 @@ class CommentModelTest(TestCase):
             password='testpass123',
             role='customer'
         )
-        self.category = Category.objects.create(name='Technical')
+        self.category = 'OTHER'
         self.ticket = Ticket.objects.create(
             title='Test Ticket',
             description='Test description',
@@ -221,7 +221,7 @@ class TicketAPITest(APITestCase):
             password='testpass123',
             role='admin'
         )
-        self.category = Category.objects.create(name='Technical')
+        self.category = 'OTHER'
         self.tickets_url = '/api/tickets/'
     
     def test_customer_can_create_ticket(self):
@@ -231,7 +231,7 @@ class TicketAPITest(APITestCase):
             'title': 'New Ticket',
             'description': 'Test description',
             'priority': 'HIGH',
-            'category': self.category.id
+            'category': self.category
         }
         response = self.client.post(self.tickets_url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -323,7 +323,7 @@ class CommentAPITest(APITestCase):
             password='testpass123',
             role='agent'
         )
-        self.category = Category.objects.create(name='Technical')
+        self.category = 'OTHER'
         self.ticket = Ticket.objects.create(
             title='Test Ticket',
             description='Test description',
@@ -393,7 +393,7 @@ class TicketWorkflowTest(APITestCase):
             password='testpass123',
             role='agent'
         )
-        self.category = Category.objects.create(name='Technical')
+        self.category = 'OTHER'
     
     def test_complete_ticket_lifecycle(self):
         """Test complete ticket workflow from creation to resolution"""
@@ -404,7 +404,7 @@ class TicketWorkflowTest(APITestCase):
             'title': 'Login Issue',
             'description': 'Cannot login to my account',
             'priority': 'HIGH',
-            'category': self.category.id
+            'category': self.category
         }
         response = self.client.post('/api/tickets/', create_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
