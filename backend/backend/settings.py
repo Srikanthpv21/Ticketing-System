@@ -130,4 +130,3 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
