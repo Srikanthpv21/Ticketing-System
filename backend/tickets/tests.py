@@ -69,7 +69,7 @@ class TicketModelTest(TestCase):
         ticket = Ticket.objects.create(
             title='Test Ticket',
             description='Test description',
-            customer=self.customer,
+            created_by=self.customer,
             category=self.category
         )
         self.assertEqual(ticket.status, 'OPEN')
@@ -81,7 +81,7 @@ class TicketModelTest(TestCase):
         ticket = Ticket.objects.create(
             title='Test Ticket',
             description='Test description',
-            customer=self.customer,
+            created_by=self.customer,
             category=self.category
         )
         
@@ -105,7 +105,7 @@ class TicketModelTest(TestCase):
         ticket = Ticket.objects.create(
             title='Test Ticket',
             description='Test description',
-            customer=self.customer,
+            created_by=self.customer,
             category=self.category,
             assigned_to=self.agent
         )
@@ -126,7 +126,7 @@ class CommentModelTest(TestCase):
         self.ticket = Ticket.objects.create(
             title='Test Ticket',
             description='Test description',
-            customer=self.customer,
+            created_by=self.customer,
             category=self.category
         )
     
@@ -250,13 +250,13 @@ class TicketAPITest(APITestCase):
         Ticket.objects.create(
             title='Customer 1 Ticket',
             description='Test',
-            customer=self.customer,
+            created_by=self.customer,
             category=self.category
         )
         Ticket.objects.create(
             title='Customer 2 Ticket',
             description='Test',
-            customer=customer2,
+            created_by=customer2,
             category=self.category
         )
         
@@ -270,7 +270,7 @@ class TicketAPITest(APITestCase):
         Ticket.objects.create(
             title='Assigned Ticket',
             description='Test',
-            customer=self.customer,
+            created_by=self.customer,
             category=self.category,
             assigned_to=self.agent
         )
@@ -285,13 +285,13 @@ class TicketAPITest(APITestCase):
         Ticket.objects.create(
             title='Ticket 1',
             description='Test',
-            customer=self.customer,
+            created_by=self.customer,
             category=self.category
         )
         Ticket.objects.create(
             title='Ticket 2',
             description='Test',
-            customer=self.customer,
+            created_by=self.customer,
             category=self.category
         )
         
@@ -327,7 +327,7 @@ class CommentAPITest(APITestCase):
         self.ticket = Ticket.objects.create(
             title='Test Ticket',
             description='Test description',
-            customer=self.customer,
+            created_by=self.customer,
             category=self.category,
             assigned_to=self.agent
         )

@@ -4,37 +4,7 @@ import { useAuth } from "../auth/AuthContext";
 
 /* ---------------- Components ---------------- */
 
-function Navbar() {
-  const { logout, user } = useAuth();
-
-  return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-purple-600 p-1.5 rounded-lg">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-          </div>
-          <h1 className="font-bold text-xl text-gray-900 tracking-tight">Agent<span className="text-purple-600">Workspace</span></h1>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex flex-col items-end">
-            <span className="text-sm font-semibold text-gray-900">{user?.username}</span>
-            <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full">Support Agent</span>
-          </div>
-          <button
-            onClick={logout}
-            className="text-sm bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-red-600 hover:border-red-200 px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm"
-          >
-            Sign Out
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
+import RoleBasedNavbar from "../components/RoleBasedNavbar";
 
 function StatusBadge({ status }) {
   const styles = {
@@ -133,7 +103,7 @@ export default function AgentDashboard() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 font-sans text-gray-900">
-      <Navbar />
+      <RoleBasedNavbar />
 
       <div className="flex flex-1 overflow-hidden max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 gap-6">
 

@@ -4,37 +4,7 @@ import { useAuth } from "../auth/AuthContext";
 
 /* ---------------- Components ---------------- */
 
-function Navbar() {
-  const { logout, user } = useAuth();
-
-  return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-1.5 rounded-lg">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          </div>
-          <h1 className="font-bold text-xl text-gray-900 tracking-tight">Help<span className="text-blue-600">Desk</span></h1>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex flex-col items-end">
-            <span className="text-sm font-semibold text-gray-900">{user?.username}</span>
-            <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full">Customer</span>
-          </div>
-          <button
-            onClick={logout}
-            className="text-sm bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-red-600 hover:border-red-200 px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm"
-          >
-            Sign Out
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
+import RoleBasedNavbar from "../components/RoleBasedNavbar";
 
 function StatusBadge({ status }) {
   const styles = {
@@ -107,7 +77,7 @@ export default function CustomerDashboard() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 font-sans text-gray-900">
-      <Navbar />
+      <RoleBasedNavbar />
 
       <div className="flex flex-1 overflow-hidden max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 gap-6">
 
