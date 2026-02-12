@@ -1,0 +1,43 @@
+# Ticketing System
+
+# Development dependencies
+node_modules/
+venv/
+__pycache__/
+
+# Environment files (keep only .example versions)
+.env
+.env.local
+
+# Database
+*.sqlite3
+db.sqlite3
+
+# Build artifacts
+dist/
+build/
+staticfiles/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test outputs
+test_output*.txt
+coverage/
+.coverage
+htmlcov/
+
+# Python
+*.pyc
+*.pyo
+*.pyd
