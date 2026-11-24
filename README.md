@@ -164,11 +164,22 @@ Interactive docs (Swagger UI) are served at **`/api/docs/`**, with the OpenAPI s
 
 ![Swagger UI](docs/screenshots/api-docs.jpg)
 
+## Deploying
+
+The backend runs on any host that can run Django (it ships with gunicorn); the frontend is a static Vite build. A typical setup is the API on Render with PostgreSQL and the frontend on Cloudflare Pages.
+
+- **Backend build / pre-deploy command:** `pip install -r requirements.txt && python manage.py migrate && python manage.py bootstrap_accounts`
+- **Backend start command:** `gunicorn backend.wsgi`
+- **Frontend build:** root `frontend`, command `npm run build`, output `dist`, with `VITE_API_BASE_URL` pointing at the API.
+- Set the variables from the table above, in particular `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` (your frontend URL), `FRONTEND_URL` and the `EMAIL_*` settings.
+
+Hosts without a shell can create the first accounts with `bootstrap_accounts`. For each role you want, set `BOOTSTRAP_<ADMIN|AGENT|CUSTOMER>_USERNAME` and `_PASSWORD` (and optionally `_EMAIL`). It skips roles that are not configured, never changes users that already exist, rejects weak passwords and never prints passwords, so it is safe to run on every deploy.
+
 ## Testing and CI
 
 ```bash
 cd backend
-python manage.py test                       # 69 tests
+python manage.py test                       # 74 tests
 coverage run manage.py test && coverage report   # about 91% line coverage
 ```
 

@@ -414,3 +414,62 @@ class SessionAndAccountTests(TestCase):
         self.assertFalse(self.user.email_on_reply)
         self.assertFalse(self.user.email_on_status)
         self.assertTrue(self.user.email_on_assignment)
+
+
+class BootstrapAccountsCommandTests(TestCase):
+    """The deploy-time command that creates starter accounts from env vars."""
+
+    ENV = {
+        'BOOTSTRAP_ADMIN_USERNAME': 'siteadmin',
+        'BOOTSTRAP_ADMIN_EMAIL': 'admin@example.org',
+        'BOOTSTRAP_ADMIN_PASSWORD': 'Rare-Admin-Pass-4471',
+        'BOOTSTRAP_AGENT_USERNAME': 'demoagent',
+        'BOOTSTRAP_AGENT_PASSWORD': 'Rare-Agent-Pass-4471',
+        'BOOTSTRAP_CUSTOMER_USERNAME': 'democustomer',
+        'BOOTSTRAP_CUSTOMER_PASSWORD': 'Rare-Cust-Pass-4471',
+    }
+
+    def _run(self, env):
+        import os
+        from io import StringIO
+        from unittest.mock import patch
+        from django.core.management import call_command
+        out = StringIO()
+        with patch.dict(os.environ, env, clear=False):
+            for key in list(os.environ):
+                if key.startswith('BOOTSTRAP_') and key not in env:
+                    del os.environ[key]
+            call_command('bootstrap_accounts', stdout=out)
+        return out.getvalue()
+
+    def test_creates_each_role_and_never_prints_passwords(self):
+        output = self._run(self.ENV)
+        admin = User.objects.get(username='siteadmin')
+        self.assertEqual((admin.role, admin.is_superuser, admin.email), ('admin', True, 'admin@example.org'))
+        self.assertEqual(User.objects.get(username='demoagent').role, 'agent')
+        self.assertEqual(User.objects.get(username='democustomer').role, 'customer')
+        self.assertTrue(admin.check_password('Rare-Admin-Pass-4471'))
+        self.assertNotIn('Rare-', output)
+
+    def test_is_idempotent_and_does_not_overwrite_existing_users(self):
+        User.objects.create_user('demoagent', password='Original-Pass-9921', role='agent')
+        self._run(self.ENV)
+        self._run(self.ENV)
+        self.assertEqual(User.objects.filter(username='demoagent').count(), 1)
+        self.assertTrue(User.objects.get(username='demoagent').check_password('Original-Pass-9921'))
+
+    def test_does_nothing_when_not_configured(self):
+        self.assertIn('nothing to do', self._run({}))
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_rejects_weak_passwords(self):
+        from django.core.management.base import CommandError
+        weak = {'BOOTSTRAP_ADMIN_USERNAME': 'siteadmin', 'BOOTSTRAP_ADMIN_PASSWORD': 'password123'}
+        with self.assertRaises(CommandError):
+            self._run(weak)
+        self.assertFalse(User.objects.filter(username='siteadmin').exists())
+
+    def test_username_without_password_is_an_error(self):
+        from django.core.management.base import CommandError
+        with self.assertRaises(CommandError):
+            self._run({'BOOTSTRAP_AGENT_USERNAME': 'demoagent'})
