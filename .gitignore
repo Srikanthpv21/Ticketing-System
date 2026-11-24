@@ -41,3 +41,7 @@ htmlcov/
 *.pyc
 *.pyo
 *.pyd
+
+# Test coverage output
+.coverage
+htmlcov/
