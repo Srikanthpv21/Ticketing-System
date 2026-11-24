@@ -32,6 +32,7 @@ services:
       - "8000:8000"
     environment:
       - DEBUG=False
+      - SECURE_SSL_REDIRECT=${SECURE_SSL_REDIRECT:-False}
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DB_ENGINE=django.db.backends.postgresql
       - DB_NAME=ticketing_db

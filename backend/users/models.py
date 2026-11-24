@@ -46,6 +46,14 @@ class User(AbstractUser):
         default=ROLE_CUSTOMER,
     )
 
+    # Email notification preferences
+    email_on_reply = models.BooleanField(default=True)
+    email_on_status = models.BooleanField(default=True)
+    email_on_assignment = models.BooleanField(default=True)
+
+    # Bumped to invalidate every token issued before (see users/auth.py)
+    token_version = models.PositiveIntegerField(default=0)
+
     objects = UserManager()
 
     def is_customer(self):
