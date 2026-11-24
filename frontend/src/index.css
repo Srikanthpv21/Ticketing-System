@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 9999px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+@keyframes skeleton-pulse { 50% { opacity: .5; } }
+.skeleton { background: #e5e7eb; border-radius: .5rem; animation: skeleton-pulse 1.5s ease-in-out infinite; }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ---- Motion: short, subtle, and off for users who ask for less motion ---- */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.reveal { animation: reveal 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .skeleton { animation: none; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; }
+}

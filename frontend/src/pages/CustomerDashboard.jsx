@@ -1,25 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import api from "../api/client";
-import { useAuth } from "../auth/AuthContext";
-
-/* ---------------- Components ---------------- */
-
+import { useAuth } from "../auth/useAuth";
 import RoleBasedNavbar from "../components/RoleBasedNavbar";
+import { StatusBadge, CategoryBadge, ErrorBanner } from "../components/Badges";
+import { displayName } from "../utils/format";
 
-function StatusBadge({ status }) {
-  const styles = {
-    OPEN: "bg-yellow-50 text-yellow-700 ring-yellow-600/20",
-    IN_PROGRESS: "bg-blue-50 text-blue-700 ring-blue-700/10",
-    RESOLVED: "bg-green-50 text-green-700 ring-green-600/20",
-    CLOSED: "bg-gray-50 text-gray-600 ring-gray-500/10",
-  }[status] || "bg-gray-50 text-gray-600 ring-gray-500/10";
-
-  return (
-    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${styles}`}>
-      {status.replace("_", " ")}
-    </span>
-  );
-}
+const apiError = (err, fallback) =>
+  err?.response?.data?.detail || fallback;
 
 /* ---------------- Dashboard ---------------- */
 export default function CustomerDashboard() {
@@ -27,17 +14,28 @@ export default function CustomerDashboard() {
 
   const [tickets, setTickets] = useState([]);
   const [active, setActive] = useState(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  // Mobile: show either the list or the detail panel
+  const [showDetail, setShowDetail] = useState(false);
+
+  const chatEndRef = useRef(null);
+  const replyRef = useRef(null);
 
   /* Load tickets */
-  const loadTickets = async () => {
+  const loadTickets = async (selectId) => {
     const res = await api.get("/api/tickets/");
     setTickets(res.data);
-    if (!active && res.data.length) setActive(res.data[0]);
+    setActive((prev) => {
+      if (selectId) return res.data.find((t) => t.id === selectId) ?? prev;
+      return prev ?? res.data[0] ?? null;
+    });
   };
 
   const loadTicket = async (id) => {
@@ -46,163 +44,317 @@ export default function CustomerDashboard() {
   };
 
   useEffect(() => {
-    loadTickets();
+    let cancelled = false;
+    api
+      .get("/api/tickets/")
+      .then((res) => {
+        if (cancelled) return;
+        setTickets(res.data);
+        setActive((prev) => prev ?? res.data[0] ?? null);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(apiError(err, "Could not load your tickets."));
+      })
+      .finally(() => {
+        if (!cancelled) setInitialLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // Keep the newest message in view
+  const commentCount = active?.comments?.length ?? 0;
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [active?.id, commentCount]);
+
+  // Grow the reply box to fit its text (also when text is inserted for us)
+  useEffect(() => {
+    const el = replyRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 220) + "px";
+  }, [message, active?.id]);
+
+  const openTicket = async (t) => {
+    setActive(t);
+    setIsCreating(false);
+    setShowDetail(true);
+    setError("");
+    try {
+      await loadTicket(t.id); // refresh with latest comments
+    } catch {
+      /* keep the list copy */
+    }
+  };
 
   /* Create ticket */
   const createTicket = async (e) => {
     e.preventDefault();
-    if (!title || !description) return;
+    if (!title.trim() || !description.trim() || submitting) return;
 
-    await api.post("/api/tickets/", { title, description });
-    setTitle("");
-    setDescription("");
-    setIsCreating(false);
-    loadTickets();
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await api.post("/api/tickets/", {
+        title: title.trim(),
+        description: description.trim(),
+      });
+      setTitle("");
+      setDescription("");
+      setIsCreating(false);
+      setShowDetail(true);
+      await loadTickets(res.data.id);
+    } catch (err) {
+      setError(apiError(err, "Could not create the ticket. Please try again."));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   /* Send message */
   const sendMessage = async (e) => {
-    e.preventDefault();
-    if (!message.trim()) return;
+    e?.preventDefault();
+    if (!message.trim() || submitting) return;
 
-    await api.post(`/api/tickets/${active.id}/comments/`, {
-      message,
-      is_internal: false,
-    });
+    setSubmitting(true);
+    setError("");
+    try {
+      await api.post(`/api/tickets/${active.id}/comments/`, {
+        message: message.trim(),
+        is_internal: false,
+      });
+      setMessage("");
+      await loadTicket(active.id);
+    } catch (err) {
+      setError(apiError(err, "Message failed to send. Please try again."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-    setMessage("");
-    loadTicket(active.id);
+  // Enter sends, Shift+Enter adds a new line
+  const onMessageKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const startCreating = () => {
+    setIsCreating(true);
+    setShowDetail(true);
+    setError("");
   };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 font-sans text-gray-900">
       <RoleBasedNavbar />
 
-      <div className="flex flex-1 overflow-hidden max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 gap-6">
-
+      <div className="flex flex-1 overflow-hidden w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6 gap-6">
         {/* -------- Left Panel (List) -------- */}
-        <aside className="w-full md:w-80 flex flex-col gap-4 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <aside
+          className={`${showDetail ? "hidden" : "flex"} md:flex w-full md:w-80 xl:w-96 md:shrink-0 flex-col bg-white rounded-lg border border-gray-100 overflow-hidden`}
+        >
           <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h2 className="font-bold text-gray-900">My Tickets</h2>
+            <div>
+              <h2 className="font-semibold text-gray-900">My Tickets</h2>
+              <p className="text-xs text-gray-400">
+                {tickets.length} {tickets.length === 1 ? "ticket" : "tickets"}
+              </p>
+            </div>
             <button
-              onClick={() => setIsCreating(true)}
-              className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
-              title="Create Ticket"
+              onClick={startCreating}
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
+              New
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+            {initialLoading &&
+              [0, 1, 2].map((i) => (
+                <div key={i} className="p-3 space-y-2">
+                  <div className="skeleton h-4 w-3/4" />
+                  <div className="skeleton h-3 w-1/2" />
+                </div>
+              ))}
+
             {tickets.map((t) => (
-              <div
+              <button
                 key={t.id}
-                onClick={() => { setActive(t); setIsCreating(false); }}
-                className={`cursor-pointer rounded-lg p-3 text-sm transition-all duration-200 border
+                type="button"
+                onClick={() => openTicket(t)}
+                className={`w-full text-left cursor-pointer rounded-lg p-3 text-sm transition-all duration-200 border
                   ${active?.id === t.id && !isCreating
-                    ? "bg-blue-50 border-blue-200 shadow-sm ring-1 ring-blue-200"
+                    ? "bg-blue-50 border-blue-200 ring-1 ring-blue-200"
                     : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"
                   }`}
               >
-                <div className="flex justify-between items-start mb-1">
+                <div className="flex justify-between items-start mb-2 gap-2">
                   <span className="font-medium text-gray-900 line-clamp-1">{t.title}</span>
                   <span className="text-xs text-gray-400">#{t.id}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <StatusBadge status={t.status} />
-                  <span className="text-xs text-gray-400 font-mono">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <StatusBadge status={t.status} />
+                    <span aria-hidden="true" className="text-gray-300">·</span>
+                    <CategoryBadge category={t.category} />
+                  </div>
+                  <span className="text-xs text-gray-400">
                     {new Date(t.created_at).toLocaleDateString()}
                   </span>
                 </div>
-              </div>
+              </button>
             ))}
-            {tickets.length === 0 && (
-              <div className="text-center py-8 text-gray-400 text-sm">
-                No tickets yet.
+
+            {!initialLoading && tickets.length === 0 && (
+              <div className="text-center py-10 px-4">
+                <p className="text-gray-500 text-sm font-medium">No tickets yet</p>
+                <p className="text-gray-400 text-xs mt-1 mb-4">
+                  Need help? Open a ticket and our team will respond.
+                </p>
+                <button
+                  onClick={startCreating}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  Create a ticket
+                </button>
               </div>
             )}
           </div>
         </aside>
 
         {/* -------- Main Panel (Chat or Create) -------- */}
-        <main className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative">
+        <main
+          className={`${showDetail ? "flex" : "hidden"} md:flex flex-1 min-w-0 flex-col bg-white rounded-lg border border-gray-100 overflow-hidden relative`}
+        >
+          {/* Mobile back button */}
+          <button
+            type="button"
+            onClick={() => setShowDetail(false)}
+            className="md:hidden flex items-center gap-1 px-4 py-2 text-sm text-blue-600 border-b border-gray-100 text-left"
+          >
+            ← All tickets
+          </button>
+
+          {error && (
+            <div className="p-3 pb-0">
+              <ErrorBanner message={error} onDismiss={() => setError("")} />
+            </div>
+          )}
+
           {isCreating ? (
-            <div className="flex-1 flex flex-col p-8 max-w-2xl mx-auto w-full">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Create New Ticket</h2>
-                <p className="text-gray-500 mt-1">Describe your issue and we'll get back to you shortly.</p>
+            <form onSubmit={createTicket} className="flex-1 min-h-0 flex flex-col">
+              {/* Header */}
+              <div className="px-6 md:px-8 py-5 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Create a ticket</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Tell us what you need help with. Your ticket is categorised
+                  automatically and assigned to a support agent.
+                </p>
               </div>
 
-              <form onSubmit={createTicket} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-                  <input
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2.5 bg-gray-50 border transition-all"
-                    placeholder="Brief summary of the issue"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                  />
+              {/* Fields */}
+              <div className="flex-1 overflow-y-auto px-6 md:px-8 py-6">
+                <div className="max-w-2xl space-y-6">
+                  <div>
+                    <div className="flex items-baseline justify-between mb-1.5">
+                      <label htmlFor="ticket-title" className="text-sm font-medium text-gray-700">
+                        Subject <span className="text-red-600">*</span>
+                      </label>
+                      <span className="text-xs text-gray-400">{title.length}/200</span>
+                    </div>
+                    <input
+                      id="ticket-title"
+                      className="block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      placeholder="e.g. I can't reset my password"
+                      value={title}
+                      maxLength={200}
+                      onChange={(e) => setTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="ticket-desc" className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Description <span className="text-red-600">*</span>
+                    </label>
+                    <textarea
+                      id="ticket-desc"
+                      className="block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 resize-y min-h-[200px]"
+                      rows="9"
+                      placeholder="What happened, and what did you expect to happen?"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1.5">
+                      Include any error messages and the steps that led to the problem.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                  <textarea
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 p-3 bg-gray-50 border transition-all"
-                    rows="6"
-                    placeholder="Please provide detailed information about your issue..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
-                  >
-                    Submit Ticket
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsCreating(false)}
-                    className="px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
+              </div>
+
+              {/* Actions */}
+              <div className="px-6 md:px-8 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCreating(false)}
+                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="rounded-md bg-blue-700 px-5 py-2 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {submitting ? "Submitting…" : "Submit ticket"}
+                </button>
+              </div>
+            </form>
           ) : active ? (
             <>
               {/* Ticket Header */}
-              <div className="bg-white border-b border-gray-100 p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">{active.title}</h2>
-                    <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                        {active.created_by}
-                      </span>
+              <div className="bg-white border-b border-gray-100 p-4 md:p-6 max-h-[40%] overflow-y-auto">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="text-xl font-semibold text-gray-900 [overflow-wrap:anywhere]">{active.title}</h2>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-gray-500">
+                      <span>{displayName(active.created_by)}</span>
                       <span>•</span>
                       <span>{new Date(active.created_at).toLocaleString()}</span>
+                      {active.assigned_to_username && (
+                        <>
+                          <span>•</span>
+                          <span>Handled by {displayName(active.assigned_to_username)}</span>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
+                  <div className="flex flex-col items-end gap-2 shrink-0">
                     <StatusBadge status={active.status} />
+                    <CategoryBadge category={active.category} />
                     <span className="text-xs font-mono text-gray-400">#{active.id}</span>
                   </div>
                 </div>
-                <div className="mt-4 bg-gray-50 p-4 rounded-lg text-gray-700 text-sm leading-relaxed border border-gray-100">
+                <div className="mt-4 w-fit max-w-3xl bg-gray-50 px-4 py-3 rounded-lg text-gray-700 text-sm leading-relaxed border border-gray-200 whitespace-pre-wrap [overflow-wrap:anywhere]">
                   {active.description}
                 </div>
               </div>
 
               {/* Chat Area */}
-              <div className="flex-1 p-6 space-y-6 overflow-y-auto bg-gray-50/30">
+              <div className="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto bg-gray-50/30 custom-scrollbar">
+                {active.comments.length === 0 && (
+                  <p className="text-center text-sm text-gray-400 pt-6">
+                    No replies yet. Our team will respond here.
+                  </p>
+                )}
                 {active.comments.map((c) => {
                   const isMine = c.user === user.username;
                   return (
@@ -210,23 +362,24 @@ export default function CustomerDashboard() {
                       key={c.id}
                       className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                     >
-                      <div className={`flex flex-col max-w-[80%] ${isMine ? "items-end" : "items-start"}`}>
+                      <div className={`flex flex-col min-w-0 max-w-[85%] md:max-w-[80%] ${isMine ? "items-end" : "items-start"}`}>
                         <div
-                          className={`px-5 py-3 rounded-2xl text-sm shadow-sm
+                          className={`px-5 py-3 rounded-lg text-sm
                             ${isMine
-                              ? "bg-blue-600 text-white rounded-br-none"
-                              : "bg-white border border-gray-200 text-gray-800 rounded-bl-none"
+                              ? "bg-blue-700 text-white"
+                              : "bg-white border border-gray-200 text-gray-800"
                             }`}
                         >
-                          <p className="leading-relaxed whitespace-pre-wrap">{c.message}</p>
+                          <p className="leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">{c.message}</p>
                         </div>
                         <span className="text-[10px] text-gray-400 mt-1 px-1">
-                          {c.user} • {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {displayName(c.user)} • {new Date(c.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
                     </div>
                   );
                 })}
+                <div ref={chatEndRef} />
               </div>
 
               {/* Input Area */}
@@ -234,27 +387,23 @@ export default function CustomerDashboard() {
                 onSubmit={sendMessage}
                 className="bg-white border-t border-gray-100 p-4 flex gap-3 items-end"
               >
-                <div className="flex-1 relative">
-                  <textarea
-                    className="w-full border-gray-200 rounded-xl focus:ring-blue-500 focus:border-blue-500 pl-4 pr-12 py-3 bg-gray-50 focus:bg-white transition-all resize-none shadow-sm text-sm"
-                    placeholder="Type your reply..."
-                    rows="1"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    style={{ minHeight: '46px', maxHeight: '120px' }}
-                    onInput={(e) => {
-                      e.target.style.height = 'auto';
-                      e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                  />
-                  <div className="absolute right-3 bottom-2.5 text-gray-400 hover:text-gray-600 cursor-pointer">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                  </div>
-                </div>
+                <textarea
+                  aria-label="Reply"
+                  className="flex-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 px-4 py-3 bg-gray-50 focus:bg-white transition-all resize-none text-sm"
+                  placeholder="Type your reply…"
+                  title="Enter to send, Shift+Enter for a new line"
+                  ref={replyRef}
+                  rows="1"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={onMessageKeyDown}
+                  style={{ minHeight: "46px", maxHeight: "220px" }}
+                />
 
                 <button
-                  disabled={!message.trim()}
-                  className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex-shrink-0"
+                  aria-label="Send message"
+                  disabled={!message.trim() || submitting}
+                  className="bg-blue-700 text-white p-3 rounded-lg hover:bg-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 >
                   <svg className="w-5 h-5 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -263,12 +412,15 @@ export default function CustomerDashboard() {
               </form>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-              </div>
-              <p className="font-medium">Welcome to HelpDesk</p>
-              <p className="text-sm mt-1">Select a ticket or create a new one to get started.</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 p-6 text-center">
+              <p className="font-medium text-gray-600">No ticket selected</p>
+              <p className="text-sm mt-1 mb-4">Choose a ticket from the list, or create a new one.</p>
+              <button
+                onClick={startCreating}
+                className="px-4 py-2 bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition"
+              >
+                Create a ticket
+              </button>
             </div>
           )}
         </main>
