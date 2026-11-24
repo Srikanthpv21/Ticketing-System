@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import Ticket, Comment
 
 
@@ -37,7 +38,7 @@ class TicketSerializer(serializers.ModelSerializer):
     from django.contrib.auth import get_user_model
     User = get_user_model()
     assigned_to = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
+        queryset=User.objects.filter(role="agent"),
         required=False,
         allow_null=True
     )
@@ -68,17 +69,33 @@ class TicketSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_assigned_to_username(self, obj):
         return obj.assigned_to.username if obj.assigned_to else None
 
+    @extend_schema_field(CommentSerializer(many=True))
     def get_comments(self, obj):
         request = self.context.get("request")
         user = request.user if request else None
 
-        qs = obj.comments.all()
+        # .all() reuses the prefetched comments; filtering happens in Python so
+        # it does not trigger another query per ticket.
+        comments = list(obj.comments.all())
 
         # Customers see only public messages
         if user and user.role == "customer":
-            qs = qs.filter(is_internal=False)
+            comments = [c for c in comments if not c.is_internal]
 
-        return CommentSerializer(qs, many=True).data
+        return CommentSerializer(comments, many=True).data
+
+
+class StatusUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=Ticket.STATUS_CHOICES)
+
+
+class AiSuggestionSerializer(serializers.Serializer):
+    suggestion = serializers.CharField()
+
+
+class AiSummarySerializer(serializers.Serializer):
+    summary = serializers.CharField()
