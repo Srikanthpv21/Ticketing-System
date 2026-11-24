@@ -5,6 +5,8 @@
 
 A full-stack support portal. Customers raise tickets and talk to support, agents work the tickets assigned to them, and admins see the whole system and balance the workload. Tickets are categorised automatically with Google Gemini, with a safe fallback when the AI is unavailable.
 
+**Live demo:** [ticketing-system-5mp.pages.dev](https://ticketing-system-5mp.pages.dev) (frontend on Cloudflare Pages) · [API docs](https://ticketing-system-backend-ox75.onrender.com/api/docs/) (backend on Render). Sign up as a customer to try it. The backend runs on a free plan, so the first request after a quiet period can take up to a minute while it wakes up.
+
 **Stack:** Django 5 · Django REST Framework · JWT (SimpleJWT) · PostgreSQL / SQLite · React 19 · Vite · Tailwind CSS 4 · Docker
 
 | Login | Customer |
