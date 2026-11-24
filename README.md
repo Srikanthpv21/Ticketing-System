@@ -1,544 +1,196 @@
-# 🎫 Ticketing System — Help Desk / Support Portal
+# HelpDesk: Support Ticketing System
 
-[![Built with Django & React](https://img.shields.io/badge/Stack-Django%20%7C%20React-lightgrey.svg)](#-tech-stack) [![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini-8E75B2.svg)](https://deepmind.google/technologies/gemini/) [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-blue.svg)](#) [![Docker](https://img.shields.io/badge/Deploy-Docker-blue.svg)](#) [![Tests Passing](https://img.shields.io/badge/Tests-31%20Passing-brightgreen.svg)](#-running-tests)
+[![CI](https://github.com/Srikanthpv21/Ticketing-System/actions/workflows/ci.yml/badge.svg)](https://github.com/Srikanthpv21/Ticketing-System/actions/workflows/ci.yml)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
-A **production-ready**, full-stack Help Desk / Ticketing System with modern UI design, AI-powered ticket categorization, and comprehensive role-based workflows. Built for enterprise-level customer support operations.
+A full-stack support portal. Customers raise tickets and talk to support, agents work the tickets assigned to them, and admins see the whole system and balance the workload. Tickets are categorised automatically with Google Gemini, with a safe fallback when the AI is unavailable.
 
-> **Capstone Project** for ClogenAI Academy — AI-Assisted Web Application Development
+**Stack:** Django 5 · Django REST Framework · JWT (SimpleJWT) · PostgreSQL / SQLite · React 19 · Vite · Tailwind CSS 4 · Docker
 
----
+| Login | Customer |
+|---|---|
+| ![Login page](docs/screenshots/login.jpg) | ![Customer view of a ticket conversation](docs/screenshots/customer.jpg) |
 
-## ✨ Highlights
+| Agent workspace | Admin dashboard |
+|---|---|
+| ![Agent workspace](docs/screenshots/agent.jpg) | ![Admin dashboard](docs/screenshots/admin.jpg) |
 
-- ✅ **Modern, Professional UI** — Glassmorphism design with smooth animations
-- 🎨 **Role-based Dynamic Theming** — Customer (Blue), Agent (Purple), Admin (Indigo)
-- 🤖 **AI-powered Ticket Categorization** — Google Gemini integration
-- 💬 **Real-time Chat Interface** — Threaded comments with internal notes
-- 🔄 **Complete Ticket Lifecycle** — `OPEN → IN_PROGRESS → RESOLVED → CLOSED`
-- 🐳 **Production Docker Setup** — Multi-container orchestration
-- 🧪 **100% Test Coverage** — 31 passing tests (Models, API, Integration)
-- 🔐 **Secure JWT Authentication** — Token-based auth with role management
-- 📊 **Analytics Dashboard** — Visual charts and system metrics
-- 🌐 **Production Ready** — Gunicorn, PostgreSQL, environment configs
+## Features
 
----
+**Tickets and conversation**
+- Customers create tickets and reply in a threaded conversation; new tickets are auto-categorised (Login, Payment, Bug, Feature, Other) and assigned to the agent with the fewest active tickets.
+- Status lifecycle: `OPEN → IN_PROGRESS → RESOLVED → CLOSED`.
+- Agents get AI-generated ticket summaries and suggested replies (always editable before sending).
+- Email notifications for new replies, status changes and assignments, with per-user preferences.
 
-## 📸 Screenshots
+**Roles and permissions**
 
-### Login & Register Pages
-Modern authentication with glassmorphism design and professional styling.
+| | Customer | Agent | Admin |
+|---|---|---|---|
+| See tickets | their own | assigned to them | all |
+| Create tickets | yes | n/a | n/a |
+| Reply on a ticket | their own | assigned to them | any |
+| Change status | no | yes | yes |
+| Reassign | no | their own tickets | any ticket |
+| Delete a ticket | no | no | yes |
+| AI summary / reply | no | yes | yes |
 
-### Customer Dashboard
-Clean, card-based layout with ticket tracking and live chat interface.
+Public sign-up only ever creates **customers**; agents and admins are created by an administrator.
 
-### Agent Workspace
-AI-powered reply suggestions and smart ticket summaries for efficient support.
+**Admin dashboard:** status counts that double as filters, category / status charts, team workload per agent, search, filters (status, category, priority, assignee), sorting and pagination.
 
-### Admin Portal
-Comprehensive analytics, user management, and system-wide ticket overview.
+**Accounts and security**
+- JWT access + refresh tokens with automatic refresh on the client.
+- Password reset by email (one-time, expiring link; the endpoint never reveals whether an email exists; rate limited).
+- Change password, sign out on all devices, close account (customers).
+- Responsive from small phones to wide desktops.
 
----
+## Architecture
 
-## 🚀 Tech Stack
-
-### Backend
-- **Django 5.0+** — Web framework
-- **Django REST Framework** — RESTful API
-- **SimpleJWT** — JWT Authentication
-- **PostgreSQL** — Production database
-- **SQLite** — Development fallback
-- **Google Gemini API** — AI categorization
-- **Gunicorn** — Production WSGI server
-
-### Frontend
-- **React 19** — UI library
-- **Vite** — Build tool & dev server
-- **Tailwind CSS 4** — Modern styling framework
-- **Axios** — HTTP client
-- **React Router** — Navigation
-- **Chart.js** — Analytics visualization
-
-### DevOps
-- **Docker & Docker Compose** — Containerization
-- **PostgreSQL 15** — Database container
-- **Gunicorn** — Production server
-- **Environment variables** — Secure configuration
-
----
-
-## 👥 User Roles & Capabilities
-
-| Role     | Capabilities |
-|---------:|--------------|
-| **Customer** | Create tickets, real-time chat, track status, view history |
-| **Agent**    | Manage assigned tickets, AI reply suggestions, status updates, internal notes |
-| **Admin**    | System analytics, user management, all tickets access, visual dashboards |
-
----
-
-## 🧠 Key Features
-
-### 🔐 Authentication & Authorization
-- Modern glassmorphism login/register UI
-- JWT-based authentication
-- Secure role-based access control
-- Auto role assignment (customers, agents, admins)
-- Password validation & security
-
-### 🎫 Ticket Management
-- Intuitive ticket creation interface
-- Auto-assignment to available agents
-- Priority levels: LOW, MEDIUM, HIGH, CRITICAL
-- Categories: Login, Payment, Bug, Feature, Other
-- Complete status workflow with validation
-
-### 💬 Customer–Agent Communication
-- Real-time style chat interface
-- Threaded comments per ticket
-- Internal agent notes (hidden from customers)
-- Message history with timestamps
-- Responsive UI for seamless conversations
-
-### 🤖 AI Integration
-- **Automatic Categorization**: Gemini analyzes ticket descriptions
-- **Smart Reply Suggestions**: AI-generated responses for agents
-- **Ticket Summarization**: Quick overview of long ticket threads
-- Safe fallback when API key is missing
-- Configurable AI behavior
-
-### 📊 Admin Analytics
-- Visual charts (Chart.js) for ticket status
-- Category distribution insights
-- Real-time ticket counts
-- User management overview
-- System-wide metrics
-
-### 🎨 Professional UI/UX
-- Modern glassmorphism design
-- Smooth fade-in and slide animations
-- Role-based dynamic theming
-- Responsive across all devices
-- Custom scrollbars and hover effects
-- Loading states and error handling
-
----
-
-## 🛠️ Getting Started
-
-### Prerequisites
-
-- **Docker & Docker Compose** (recommended) OR
-- **Python 3.11+** and **Node.js 20+**
-- **PostgreSQL 15+** (if running locally without Docker)
-- **Git**
-
-### Quick Start with Docker (Recommended)
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Srikanthpv21/Ticketing-System.git
-   cd Ticketing-System
-   ```
-
-2. **Set up environment variables**
-   ```bash
-   # Backend
-   cp backend/.env.example backend/.env
-   
-   # Frontend
-   cp frontend/.env.example frontend/.env
-   
-   # (Optional) Add your Google Gemini API key to backend/.env
-   ```
-
-3. **Start all services with Docker Compose**
-   ```bash
-   docker-compose up --build
-   ```
-
-4. **Access the application**
-   - **Frontend**: http://localhost:5173
-   - **Backend API**: http://localhost:8000
-   - **Admin Panel**: http://localhost:8000/admin
-
-5. **Default test users** (created by seed command):
-   - **Customer**: `customer1` / `password123`
-   - **Agent**: `agent1` / `password123`
-   - **Admin**: `admin1` / `password123`
-
-### Local Development Setup (Without Docker)
-
-#### Backend Setup
-
-1. **Navigate to backend directory**
-   ```bash
-   cd backend
-   ```
-
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   
-   # Windows
-   venv\Scripts\activate
-   
-   # macOS/Linux
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env and configure your settings
-   ```
-
-5. **Run migrations**
-   ```bash
-   python manage.py migrate
-   ```
-
-6. **Seed sample data**
-   ```bash
-   python manage.py seed_ticket_data
-   ```
-
-7. **Start development server**
-   ```bash
-   python manage.py runserver
-   ```
-
-#### Frontend Setup
-
-1. **Navigate to frontend directory**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-
-4. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Access the application**
-   - Frontend: http://localhost:5173
-   - Backend: http://localhost:8000
-
----
-
-## ⚙️ Environment Variables
-
-### Backend (`backend/.env`)
-
-```env
-# Django Settings
-DJANGO_SECRET_KEY=your-secret-key-here-change-in-production
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-# Database Configuration (PostgreSQL)
-DB_ENGINE=django.db.backends.postgresql
-DB_NAME=ticketing_db
-DB_USER=postgres
-DB_PASSWORD=postgres123
-DB_HOST=localhost  # Use 'db' for Docker
-DB_PORT=5432
-
-# JWT Settings
-JWT_ACCESS_TOKEN_LIFETIME=60
-
-# Google Gemini API (for AI features)
-GEMINI_API_KEY=your-gemini-api-key-here
-
-# CORS Settings (Frontend URL)
-CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+```mermaid
+flowchart LR
+    Browser["React SPA<br/>(Vite, Tailwind)"] -- "REST + JWT" --> API["Django REST Framework"]
+    API --> DB[("PostgreSQL<br/>(SQLite in dev)")]
+    API -- "categorise, summarise,<br/>suggest replies" --> AI["Google Gemini API"]
+    API -- "SMTP" --> Mail["Email provider"]
 ```
 
-### Frontend (`frontend/.env`)
-
-```env
-# Backend API URL
-VITE_API_BASE_URL=http://localhost:8000
+```
+backend/
+  users/      custom User (role, notification prefs, token_version), auth, account endpoints
+  tickets/    Ticket / Comment models, API, AI helpers, notifications, pagination
+  backend/    settings and URL config
+frontend/
+  src/pages/        Login, Register, password reset, Customer / Agent / Admin dashboards, Settings
+  src/components/   shared UI (badges, auth layout, navbar, animated counters)
+  src/api/client.js axios instance with token refresh
 ```
 
----
+### Design decisions worth knowing
 
-## 🗄️ Database Setup
+- **Role-scoped querysets.** Visibility is enforced in `get_queryset`, not in the UI, so an agent or customer can never fetch another user's ticket by guessing an id. Filters and search narrow this scoped set; they can't widen it (covered by a test).
+- **Instant session invalidation.** Tokens carry the user's `token_version`. Signing out everywhere, changing or resetting a password, or closing an account bumps the version, which kills every previously issued access *and* refresh token immediately instead of waiting for expiry.
+- **Opt-in pagination.** `GET /api/tickets/` returns a plain list; adding `?page=` or `?page_size=` (max 100) returns `{count, next, previous, results}`. This keeps existing clients working while giving the API real pagination.
+- **No N+1 queries.** The ticket list uses `select_related` and a `Prefetch` for comments, and a regression test asserts the query count does not grow with the number of tickets.
+- **AI is optional and isolated.** Without a key, or on any API error, the helpers return safe fallbacks and log the error server-side (internals are never returned to the client). Ticket text is passed to the model as delimited data to reduce prompt injection.
+- **Notifications never break a request.** Email failures are logged and swallowed; the API call that triggered them still succeeds.
 
-### Using PostgreSQL (Production)
+## Run it locally
 
-1. **Install PostgreSQL** (if not using Docker)
-   ```bash
-   # Windows: Download from postgresql.org
-   # macOS: brew install postgresql
-   # Linux: sudo apt-get install postgresql
-   ```
+### With Docker
 
-2. **Create database**
-   ```sql
-   CREATE DATABASE ticketing_db;
-   CREATE USER postgres WITH PASSWORD 'postgres123';
-   GRANT ALL PRIVILEGES ON DATABASE ticketing_db TO postgres;
-   ```
-
-3. **Update `.env` file**
-   ```env
-   DB_ENGINE=django.db.backends.postgresql
-   DB_NAME=ticketing_db
-   DB_USER=postgres
-   DB_PASSWORD=postgres123
-   DB_HOST=localhost
-   DB_PORT=5432
-   ```
-
-### Using SQLite (Development Fallback)
-
-Simply set in `.env`:
-```env
-DB_ENGINE=django.db.backends.sqlite3
-DB_NAME=db.sqlite3
+```bash
+git clone https://github.com/Srikanthpv21/Ticketing-System.git
+cd Ticketing-System
+docker compose up --build
 ```
 
----
+Frontend: http://localhost:5173 · API: http://localhost:8000 · API docs: http://localhost:8000/api/docs/
 
-## 🧪 Running Tests
+Set `GEMINI_API_KEY` in your shell first if you want AI features (optional). The compose file runs migrations and seeds demo data.
 
-### Backend Tests
+### Without Docker
+
+**Backend** (Python 3.11+)
 
 ```bash
 cd backend
-
-# Run all tests (31 tests)
-python manage.py test
-
-# Run specific app tests
-python manage.py test tickets
-python manage.py test users
-
-# Run with verbose output
-python manage.py test --verbosity=2
-
-# Run with coverage
-pip install coverage
-coverage run --source='.' manage.py test
-coverage report
+python -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env              # Windows: copy .env.example .env
+python manage.py migrate
+python manage.py seed_ticket_data # demo users and sample tickets
+python manage.py runserver
 ```
 
-### Test Coverage
+**Frontend** (Node 20+)
 
-The test suite includes:
-- ✅ **Model tests**: User, Ticket, Comment validations
-- ✅ **API tests**: CRUD operations, permissions
-- ✅ **Authentication tests**: Login, register, JWT tokens
-- ✅ **Integration tests**: Complete ticket lifecycle
-- ✅ **Permission tests**: Role-based access control
-
-**All 31 tests passing** ✨
-
----
-
-## 🔍 API Endpoints
-
-### Authentication
-- `POST /auth/register/` — Register new user
-- `POST /auth/login/` — Login (returns JWT)
-- `GET /auth/me/` — Get current user info
-- `POST /auth/token/refresh/` — Refresh JWT token
-
-### Tickets
-- `GET /api/tickets/` — List tickets (role-based filtering)
-- `POST /api/tickets/` — Create ticket (customer only)
-- `GET /api/tickets/:id/` — Get ticket details
-- `PATCH /api/tickets/:id/` — Update ticket
-- `DELETE /api/tickets/:id/` — Delete ticket
-
-### AI Features (Agents/Admins only)
-- `GET /api/tickets/:id/ai_reply/` — Get AI reply suggestion
-- `GET /api/tickets/:id/ai_summary/` — Get AI ticket summary
-
-### Comments
-- `POST /api/tickets/:id/comments/` — Add comment to ticket
-
-### Admin Panel
-- `/admin/` — Django admin interface
-
----
-
-## 📁 Project Structure
-
-```
-Ticketing-System/
-├── backend/
-│   ├── backend/
-│   │   ├── settings.py          # Django configuration
-│   │   ├── urls.py              # Main URL routing
-│   │   └── wsgi.py              # WSGI application
-│   ├── tickets/
-│   │   ├── models.py            # Ticket, Comment models
-│   │   ├── views.py             # API viewsets
-│   │   ├── serializers.py       # DRF serializers
-│   │   ├── ai.py                # AI categorization
-│   │   ├── tests.py             # Test suite
-│   │   └── management/
-│   │       └── commands/
-│   │           └── seed_ticket_data.py
-│   ├── users/
-│   │   ├── models.py            # Custom User model
-│   │   ├── views.py             # Auth endpoints
-│   │   ├── serializers.py       # User serializers
-│   │   └── tests.py             # User tests
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── api/
-│   │   │   └── client.js        # Axios config
-│   │   ├── auth/
-│   │   │   ├── AuthContext.jsx  # Auth state
-│   │   │   └── ProtectedRoute.jsx
-│   │   ├── components/
-│   │   │   ├── RoleBasedNavbar.jsx
-│   │   │   ├── TicketCard.jsx
-│   │   │   └── Comments.jsx
-│   │   ├── pages/
-│   │   │   ├── Login.jsx        # Modern login UI
-│   │   │   ├── Register.jsx     # Modern register UI
-│   │   │   ├── CustomerDashboard.jsx
-│   │   │   ├── AgentDashboard.jsx
-│   │   │   └── AdminDashboard.jsx
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── package.json
-│   ├── Dockerfile
-│   └── .env.example
-├── docker-compose.yml           # Development
-├── docker-compose.prod.yml      # Production
-├── .gitignore
-└── README.md
+```bash
+cd frontend
+cp .env.example .env              # Windows: copy .env.example .env
+npm ci
+npm run dev
 ```
 
----
+### Demo accounts (development only)
 
-## 🚀 Deployment
+`seed_ticket_data` creates `customer1`, `agent1` and `admin1`, all with the password `password123`. These exist for local development; never seed them on a real deployment.
 
-### Docker Production Deployment
+With `DEBUG=True` (the `.env.example` default) the app prints password-reset and notification emails in the backend terminal, so no mail server is needed locally.
 
-1. **Update environment variables for production**
-   ```bash
-   # Set DEBUG=False
-   # Use strong SECRET_KEY
-   # Configure proper ALLOWED_HOSTS
-   # Set secure database credentials
-   ```
+## Configuration
 
-2. **Build and run**
-   ```bash
-   docker-compose -f docker-compose.prod.yml up --build -d
-   ```
+Backend (`backend/.env`, see `.env.example`):
 
-3. **Collect static files**
-   ```bash
-   docker-compose exec backend python manage.py collectstatic --noinput
-   ```
+| Variable | Purpose |
+|---|---|
+| `DJANGO_SECRET_KEY` | Required when `DEBUG` is not `True` (the app refuses to start without it) |
+| `DEBUG` | Defaults to `False`; set `True` for local development |
+| `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` | Comma-separated hosts / frontend origins |
+| `DB_ENGINE` and `DB_*` | PostgreSQL settings; SQLite is used if unset |
+| `GEMINI_API_KEY` | Enables AI features (optional) |
+| `FRONTEND_URL`, `APP_NAME` | Used in email links and subjects |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` | Real email delivery (otherwise emails print to the console) |
+| `JWT_ACCESS_TOKEN_LIFETIME` | Access token lifetime in minutes (default 60) |
 
-### Production Checklist
-- [ ] Set `DEBUG=False` in `.env`
-- [ ] Use strong `DJANGO_SECRET_KEY`
-- [ ] Configure proper `ALLOWED_HOSTS`
-- [ ] Use PostgreSQL (not SQLite)
-- [ ] Set up secure database credentials
-- [ ] Configure CORS for your domain
-- [ ] Set up SSL/TLS certificates
-- [ ] Configure static file serving
-- [ ] Set up automated backups
-- [ ] Monitor logs and errors
+Frontend (`frontend/.env`): `VITE_API_BASE_URL`, plus optional `VITE_APP_NAME` and `VITE_SUPPORT_EMAIL` for branding.
 
----
+When `DEBUG` is off, secure cookies, HSTS and an HTTPS redirect are enabled. Set `SECURE_SSL_REDIRECT=False` if you run behind plain HTTP.
 
-## 🎓 Capstone Project Requirements
+## API
 
-This project fulfills all requirements for the ClogenAI Academy Capstone:
+Interactive docs (Swagger UI) are served at **`/api/docs/`**, with the OpenAPI schema at `/api/schema/`. Use the *Authorize* button with an access token from `/auth/login/`.
 
-### ✅ Phase 1: Project Setup & Foundation
-- [x] Django + DRF backend configured
-- [x] React (Vite) frontend set up
-- [x] PostgreSQL database integration
-- [x] Docker Compose multi-container setup
-- [x] Environment variable management
-- [x] User model with role-based access
+| Method | Path | Description |
+|---|---|---|
+| POST | `/auth/register/` | Create a customer account |
+| POST | `/auth/login/` | Get access and refresh tokens |
+| POST | `/auth/refresh/` | Exchange a refresh token for a new access token |
+| GET, PATCH | `/auth/me/` | Current user; update profile and notification preferences |
+| POST | `/auth/change-password/` | Change password (signs out other devices) |
+| POST | `/auth/sign-out-everywhere/` | Invalidate every session |
+| POST | `/auth/close-account/` | Deactivate a customer account |
+| POST | `/auth/password-reset/` | Email a reset link |
+| POST | `/auth/password-reset/confirm/` | Set a new password from a reset link |
+| GET, POST | `/api/tickets/` | List (filters, search, optional pagination) / create |
+| GET, PATCH, DELETE | `/api/tickets/{id}/` | Ticket detail with comments |
+| POST | `/api/tickets/{id}/comments/` | Add a comment |
+| PATCH | `/api/tickets/{id}/update_status/` | Change status (agent / admin) |
+| GET | `/api/tickets/{id}/ai_summary/`, `/ai_reply/` | AI helpers (agent / admin) |
+| GET | `/api/tickets/agents/` | List agents (agent / admin) |
 
-### ✅ Phase 2: Core Features
-- [x] Customer: Create tickets, track status, chat
-- [x] Agent: Manage tickets, respond, update status
-- [x] Admin: System analytics, user management
-- [x] RESTful API with proper endpoints
-- [x] Role-based filtering and permissions
+`GET /api/tickets/` accepts `status`, `category`, `priority`, `assigned_to` (an id or `none`), `search`, `page` and `page_size`.
 
-### ✅ Phase 3: AI Integration
-- [x] Auto-categorization using Google Gemini
-- [x] AI reply suggestions for agents
-- [x] Ticket summarization
-- [x] Secure API key management
-- [x] Error handling and fallbacks
+![Swagger UI](docs/screenshots/api-docs.jpg)
 
-### ✅ Phase 4: Production Readiness
-- [x] Data seeding management command
-- [x] Comprehensive test suite (31 tests)
-- [x] Docker configuration for production
-- [x] Complete documentation (README)
-- [x] .env.example templates
-- [x] Clean .gitignore setup
+## Testing and CI
 
----
+```bash
+cd backend
+python manage.py test                       # 69 tests
+coverage run manage.py test && coverage report   # about 91% line coverage
+```
 
-## 🤝 Contributing
+The tests cover models, the API and permission rules, auth flows (including token invalidation and password reset), notifications, pagination and filters, the query-count guarantee, and the AI helpers with a mocked model. They never call the real Gemini API.
 
-Contributions are welcome! Please follow these steps:
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request:
+- **Backend:** install, check for missing migrations, run tests with coverage, validate the OpenAPI schema.
+- **Frontend:** `npm ci`, lint, production build.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+## Known limitations
 
----
+These are deliberate scope cuts, listed so you know what to expect:
 
-## 📄 License
+- No email verification at sign-up.
+- No automated frontend tests yet (backend is covered; the frontend is linted and built in CI).
+- Emails are sent inside the request. For heavy traffic they belong on a background queue (for example Celery).
+- Dashboards load the full ticket list. The API supports pagination, but the UI still paginates on the client.
+- Tokens are kept in `localStorage`, which is simple but exposed if the site has an XSS bug; httpOnly cookies would be stronger.
+- Updates are not pushed live; users see new messages on refresh or when they act.
+- No file attachments, and internal notes exist in the data model but have no UI.
+- The AI integration uses the `google-generativeai` package, which Google has deprecated in favour of `google-genai`.
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## License
 
----
-
-## 🙏 Acknowledgments
-
-- **ClogenAI Academy** for the project assignment and guidance
-- **Google Gemini** for AI-powered features
-- **Django** and **React** communities for excellent documentation
-- **Tailwind CSS** for the modern styling framework
-
----
-
-## 📧 Contact
-
-**Srikanth P V**
-- GitHub: [@Srikanthpv21](https://github.com/Srikanthpv21)
-- Project Link: [Ticketing-System](https://github.com/Srikanthpv21/Ticketing-System)
-
----
-
-**Built with ❤️ for ClogenAI Academy Capstone Project**
+[MIT](LICENSE)
